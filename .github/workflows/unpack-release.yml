@@ -1,0 +1,46 @@
+name: Unpack Voice Notes release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "voice-notes-v3.4-netlify.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Unpack release into repository root
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f voice-notes-v3.4-netlify.zip ]; then
+            echo "Release archive is not present; nothing to unpack."
+            exit 0
+          fi
+          rm -rf .release-unpack
+          mkdir .release-unpack
+          unzip -q -o voice-notes-v3.4-netlify.zip -d .release-unpack
+          cp -a .release-unpack/voice-notes/. .
+          rm -rf .release-unpack
+          rm -f voice-notes-v3.4-netlify.zip
+
+      - name: Commit unpacked application
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit -m "Publish Voice Notes v3.4 source"
+          git push
